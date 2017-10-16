@@ -17,7 +17,7 @@ UKF::UKF() {
   weights_ = VectorXd(2*n_aug_+1);
 
   // if this is false, laser measurements will be ignored (except during init)
-  use_laser_ = true;
+  use_laser_ = false;
 
   // if this is false, radar measurements will be ignored (except during init)
   use_radar_ = true;
@@ -84,6 +84,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   /*****************************************************************************
    *  Initialization
    ****************************************************************************/
+  cout <<"sense type= " << meas_package.sensor_type_ << endl;
   if (!is_initialized_) {
     /**
     TODO:
@@ -127,8 +128,15 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     return;
   }
 
+  // print the output
+  cout << "Before Aug " << endl;
+  cout <<"sense type= " << meas_package.sensor_type_ << endl;
+
   //Assign sigma points
   AugmentedSigmaPoints();
+
+  // print the output
+  cout << "Before Pred " << endl;
 
   /*****************************************************************************
    *  Prediction
@@ -139,16 +147,19 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 
    Prediction(dt);
 
+  cout << "Before Update " << endl;
+  cout <<"sense type= " << meas_package.sensor_type_ << endl;
   /*****************************************************************************
    *  Update
    ****************************************************************************/
-  if (meas_package.sensor_type_ == MeasurementPackage::RADAR || use_radar_) {
+  if (meas_package.sensor_type_ == MeasurementPackage::RADAR && use_radar_) {
     // Radar updates
     UpdateRadar(meas_package);
-  } else if (meas_package.sensor_type_ == MeasurementPackage::LASER || use_laser_) {
+  } else if (meas_package.sensor_type_ == MeasurementPackage::LASER && use_laser_) {
     // Laser updates
     UpdateLidar(meas_package);
   }
+  cout << "After Update " << endl;
 
   // print the output
   cout << "x_ = " << x_ << endl;
@@ -185,7 +196,8 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
   You'll also need to calculate the radar NIS.
   */
-  //create matrix for sigma points in measurement space
+  //create matrix for sigma points in measurement space 
+  cout << "1 ";
   MatrixXd Zsig = MatrixXd(3, 2 * n_aug_ + 1);
 
   //transform sigma points into measurement space
@@ -205,6 +217,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
     Zsig(1,i) = atan2(p_y,p_x);                                 //phi
     Zsig(2,i) = (p_x*v1 + p_y*v2 ) / sqrt(p_x*p_x + p_y*p_y);   //r_dot
   }
+  cout << "2 ";
 
   //mean predicted measurement
   z_pred_.fill(0.0);
@@ -234,9 +247,16 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
           0, 0,std_radrd_*std_radrd_;
   S_ = S_ + R;
 
-  //create example vector for incoming radar measurement
+  cout << "3 ";
+
   VectorXd z = VectorXd(3);
+  cout << "raw_measurements_.size =" << meas_package.raw_measurements_.size();
+  cout << meas_package.sensor_type_;
+  cout << endl <<  meas_package.raw_measurements_(0);
+  cout << endl <<  meas_package.raw_measurements_(1);
+  cout << endl <<  meas_package.raw_measurements_(2);
   z << meas_package.raw_measurements_(0), meas_package.raw_measurements_(1), meas_package.raw_measurements_(2);
+  cout << "3a ";
 
   //create matrix for cross correlation Tc
   MatrixXd Tc = MatrixXd(n_x_, 3);
@@ -246,13 +266,16 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
 
     // state difference
+    cout << "3b ";
     VectorXd x_diff = Xsig_pred_.col(i) - x_;
+    cout << "3c ";
     //angle normalization
     while (x_diff(3)> M_PI) x_diff(3)-=2.*M_PI;
     while (x_diff(3)<-M_PI) x_diff(3)+=2.*M_PI;
 
     Tc = Tc + weights_(i) * x_diff * z_diff.transpose();
   }
+  cout << "4 ";
 
   //Kalman gain K;
   MatrixXd K = Tc * S_.inverse();
@@ -267,6 +290,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   //update state mean and covariance matrix
   x_ = x_ + K * z_diff;
   P_ = P_ - K*S_*K.transpose();
+  cout << "5 ";
 }
 
 void UKF::AugmentedSigmaPoints() {

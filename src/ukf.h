@@ -72,7 +72,9 @@ public:
   double lambda_;
 
   VectorXd z_pred_;
+  VectorXd z_pred_lidar_;
   MatrixXd S_;
+  MatrixXd S_lidar_;
 
 
   /**

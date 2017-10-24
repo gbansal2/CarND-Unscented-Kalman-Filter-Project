@@ -97,9 +97,9 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 
     P_ << 1, 0, 0, 0, 0,
           0, 1, 0, 0, 0,
-          0, 0, 1000, 0, 0,
-          0, 0, 0, 1000, 0,
-          0, 0, 0, 0, 1000;
+          0, 0, 1, 0, 0,
+          0, 0, 0, 1, 0,
+          0, 0, 0, 0, 1;
     
     if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
       /**
@@ -220,6 +220,8 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
  
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
 
+    z_diff = Zsig.col(i) - z_pred_lidar_;
+
     // state difference
     x_diff = Xsig_pred_.col(i) - x_;
     //angle normalization
@@ -328,6 +330,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   //calculate cross correlation matrix
   Tc.fill(0.0);
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
+    z_diff = Zsig.col(i) - z_pred_;
 
     // state difference
     VectorXd x_diff = Xsig_pred_.col(i) - x_;
